@@ -1,0 +1,188 @@
+---
+title: "Data Management and Exploratory Data Analysis CSC8631 Coursework"
+author: "Max Piotrowicz"
+date: "13 November 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir= normalizePath('..'))
+```
+```{r}
+library(ProjectTemplate)
+load.project()
+```
+## R Markdown
+For this coursework assignment we were given a dataset relating to a massive open online course. The aim of the courework was to create an exploratory pipeline following the Cross-Industry Standard Process for Data Mining (CRISP-DM) methodology.    
+
+CRISP-DM: Cycle 1  
+Business understanding:   
+The data from the course comes from an online course on cyber security over seven runs of the course. Various different datasets are gathered as part of the process of running this course, and it is from this data that an attempt to draw useful information will be made. Obviously the people running this course will want to know where they can improve the course, with obvious areas for improvement being reducing the dropout rateor or increasing test scores in the online quizzes, amongst many others. For the first cycle I will look at the video statistics data.  
+Data Understanding:  
+The data for the video statistics is relatively easy to understand as it anonymised and such rather than having data for each individual student is just contains summary statistics for the entire cohort in question. Each section of the course has a video associated with it (e.g. Welcome to Week 2: payment security) and for each video statistics relating to video duration, total views, total downloads, total transcript views, the percentage of students who watched various percentages of the video, the viewing device, as well as the breakdown for different geographical areas that watched the videos. This dataset is only available for the 3rd to 7th run of the course.  
+Data Preparation:  
+In this case not a huge amount of data preprocessing was required, as the data is already in a format to allow the analysis that I wanted to perform. In the munging section of the project template library I simply combined the datasets from the 3rd to the 7th run of the course, as any potential correlations would have more reliability associated with them.  
+Modelling:
+```{r}
+## Plot the total views vs step position
+g = ggplot(data=video_data_merged, aes(x=step_position, y=total_views))
+g + geom_point() + geom_smooth(method=lm)+ ggtitle("Plot of total views vs step position") + xlab("Step position") + ylab("Total views")
+## Calculate the correlation between step position and total views
+cor(video_data_merged$step_position,video_data_merged$total_views)
+```
+Step progression denotes at what stage of the course the video is at. Clearly, as the course progresses, less and less people are watching the videos. 
+```{r}
+## Plotting the video duration vs the the percentage of people that watched the entire video
+g = ggplot(data=video_data_merged, aes(x=video_duration, y=viewed_onehundred_percent))
+g + geom_point() + geom_smooth(method=lm)+ ggtitle("Plot of percentage that wacthed entire video vs video duration") + xlab("Video duration") + ylab("Percentage that watched entire video")
+## Calculate the correlation between video length and percentage of people that watched the entire video
+cor(video_data_merged$video_duration,video_data_merged$viewed_onehundred_percent)
+```
+There is a negative correlation between video length and the percentage of people who wacthed the entire video. However, there is a cleaer outlier with the longest video. This video is: The evolving arms race of payment security. Maybe having an exciting title such as this provides a strong incentive for people to watch the video. 
+
+```{r}
+## Plotting the step_position vs the percent who watched one hundred per cent of the video
+g = ggplot(data=video_data_merged, aes(x=step_position, y=total_views))
+g + geom_point() + geom_smooth(method=lm)+ ggtitle("Plot of total views vs step position") + xlab("Step position") + ylab("Total views")
+plot(video_data_merged$step_position, video_data_merged$viewed_onehundred_percent)
+## There is no particular trend shown here
+## However, this is only telling us that the students who bother to watch any of the video 
+## are likely to watch it, which is maybe unsurprising because it is probably only the
+## students who are committed who are still watching at the end
+## MAybe more insightful to plot number of viewers against step number
+
+plot(video_data_merged$step_position, video_data_merged$total_views)
+##This shows a clear downward trend over the course
+
+```
+
+## Cycle 2
+
+Business Understanding: 
+Having looked at the video statistics I decided to look at a completely different dataset, namely the question responses. This could be useful to the business to see what the distribution of scores is as well as seeing how many questions are actually answered. For example, if it turns out that many students are not even bothering to answer questions it might be a good idea to completely overhaul the system in which questions to ask, such as making it a compulsory part of the assignment rather than optional.
+Data understanding:  
+The data files on question response are available for every single year of the porgram. Each response given by any indivudual to a multiple choice question is given by a true/false value along with the learner identification. It aslo shows the question number that was answered, in this way it can be seen whether a student attempted a question multiple times. For the purposes of my analysis I will treat multiple attempts of the same question as all counting towards the score of that student (e.g. a student answering only one question but attempting it three times, and only gettting it right on the third attempt would get a score of 33%). All the question types are multiple choice. 
+Data preparation: 
+To prepare the data for use I created a function that creates a dataframe containing the information about each student that I'm interested in.
+
+```{r}
+## Changing the names of the dataframes
+question_data_7 = cyber.security.7.question.response
+question_data_6 = cyber.security.6.question.response
+question_data_5 = cyber.security.5.question.response
+question_data_4 = cyber.security.4.question.response
+question_data_3 = cyber.security.3.question.response
+question_data_2 = cyber.security.2.question.response
+question_data_1 = cyber.security.1.question.response
+
+## Create a list of unique students and a dataframe to hold the statistics created (with all currently unknown statistics initialsed to zero)
+student_dataframe = function(question_data){
+students = unique(question_data$learner_id)
+student_stats = data.frame("learner_id" = students, "true" = integer(length(students)),
+                           "false" = integer(length(students)), 
+                           "questions_answered" =integer(length(students)),
+                           "percent" =integer(length(students)))
+return(student_stats)
+}
+student_stats_7 = student_dataframe(question_data_7)
+student_stats_6 = student_dataframe(question_data_6)
+student_stats_5 = student_dataframe(question_data_5)
+student_stats_4 = student_dataframe(question_data_4)
+student_stats_3 = student_dataframe(question_data_3)
+student_stats_2 = student_dataframe(question_data_2)
+student_stats_1 = student_dataframe(question_data_1)
+head(student_stats_1)
+```
+Modeling:
+I created another function which counted the number each student answered correct, wrong, percent correct, as well as number answered. 
+```{r}
+
+student_statistics = function(question_data, student_stats){
+  for (i in 1:(nrow(student_stats))){
+    a = filter(question_data, learner_id == student_stats$learner_id[i])
+    student_stats$true[i] = sum(a$correct == 'true')
+    student_stats$false[i] = sum(a$correct == 'false')
+    student_stats$questions_answered[i] = nrow(a)
+    student_stats$percent[i] = 100*student_stats$true[i]/(student_stats$true[i]+student_stats$false[i])
+  }
+  return(student_stats)
+}
+
+
+student_stats_7 = student_statistics(question_data_7, student_stats_7)
+student_stats_6 = student_statistics(question_data_6, student_stats_6)
+student_stats_5 = student_statistics(question_data_5, student_stats_5)
+student_stats_4 = student_statistics(question_data_4, student_stats_4)
+student_stats_3 = student_statistics(question_data_3, student_stats_3)
+student_stats_2 = student_statistics(question_data_2, student_stats_2)
+student_stats_1 = student_statistics(question_data_1, student_stats_1)
+
+## Merge all the data sets into one
+stud_stats_df = do.call("rbind", list(student_stats_1, student_stats_2, student_stats_3, student_stats_4,
+                                      student_stats_5, student_stats_6, student_stats_7))
+head(student_stats_1)
+```
+Now that a dataframe containg the relevant information has been created I can continue with the intended analysis. 
+
+```{r}
+theme_set(theme_classic())
+
+plot_distr = function(questions){
+graph = ggplot(questions, aes(x=percent), size=5) + geom_density(aes(fill=factor(1)), alpha=0.8) +
+  geom_vline((aes(xintercept=mean(questions$percent))), color="red", linetype="dashed", size=1)
+return(graph)
+}
+
+plot_distr(student_stats_7)
+plot_distr(student_stats_6)
+plot_distr(student_stats_5)
+plot_distr(student_stats_4)
+plot_distr(student_stats_3)
+plot_distr(student_stats_2)
+plot_distr(student_stats_1)
+
+## Maybe plot percent mark vs number of question answered
+  
+```
+
+```{r}
+## Note: some students, didn't have a student id, these should be removed from the dataset at this stage ## as otherwise they will have a very high number of questions answered value
+stud_stats_df = filter(stud_stats_df, learner_id != '')
+g = ggplot(data=stud_stats_df, aes(x=questions_answered, y=percent))
+g + geom_count() + geom_smooth(method=lm)+ ggtitle("Plot of mean percentage vs number of question responses") + xlab("Question responses") + ylab("Mean Percentage")
+cor(stud_stats_df$questions_answered,stud_stats_df$percent)
+```
+
+## Cycle 3
+
+Business Understanding: 
+Continuing the analysis from cycle two, I wanted to see if the learners' archetype has a large influence on their mean percentage score in the online tests. Learners can optionally be categorised according to an archetype such as 'flourisher' or 'explorer'. These supposedly can help to explain certain character traits and therefore can also potentially give clues as to what personality type flourishes the most with MOOCs.
+Data understanding:  
+The data files contain the leraner ID, the archetype assigned to the given learner and the time at which they responed. I am interested in only the learner ID and the archetype. Note these data files are far shorter than the number of learners in a given cohort, probably because only a minority of users decided to be assigned an archetype. The data is only available for run three to seven of the course.
+Data preparation: 
+To prepare the data I simply removed all of the data except for the student ID and the archetype. I then merged each archetype to its corresponding student statistics dataframe from the second CRISP-DM cycle. I then merged all of these into a combined dataframe. 
+
+```{r}
+## Merge the data frame for archetype with the student statistics 
+archetype_3_merged = merge(x = student_stats_3, y = archetype_3, by = 'learner_id')
+archetype_4_merged = merge(x = student_stats_4, y = archetype_4, by = 'learner_id')
+archetype_5_merged = merge(x = student_stats_5, y = archetype_5, by = 'learner_id')
+archetype_6_merged = merge(x = student_stats_6, y = archetype_6, by = 'learner_id')
+archetype_7_merged = merge(x = student_stats_7, y = archetype_7, by = 'learner_id')
+
+all_archetype_df = do.call("rbind", list(archetype_3_merged,archetype_4_merged, archetype_5_merged,
+                                         archetype_6_merged, archetype_7_merged))
+```
+Modeling: 
+```{r}
+p <- ggplot(all_archetype_df, aes(x=archetype, y=percent)) + 
+  geom_boxplot() 
+  p
+p <- ggplot(all_archetype_df, aes(x=archetype, y=questions_answered)) + 
+  geom_boxplot() 
+  p
+## Plot the number of each archtype 
+```
+
+
