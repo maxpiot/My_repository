@@ -2,60 +2,67 @@
 title: "Data Management and Exploratory Data Analysis CSC8631 Coursework"
 author: "Max Piotrowicz"
 date: "13 November 2019"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, echo=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_knit$set(root.dir= normalizePath('..'))
 ```
-```{r}
+```{r, echo=FALSE}
 library(ProjectTemplate)
 load.project()
 ```
-## R Markdown
-For this coursework assignment we were given a dataset relating to a massive open online course. The aim of the courework was to create an exploratory pipeline following the Cross-Industry Standard Process for Data Mining (CRISP-DM) methodology.    
 
-CRISP-DM: Cycle 1  
+For this coursework assignment we were given a dataset relating to a massive open online course. The aim of the courework was to create an exploratory pipeline following the Cross-Industry Standard Process for Data Mining (CRISP-DM) methodology. CRISP-DM comprises six phases: Business Understanding, Data Understanding, Data Preparation, Modeling, Evaluation, and Deployment. It is an approach to data mining that "loops back", i.e. when the evaluation phase of a given cycle is finished and new insights are acquired (even if these are all negative results, it still provides information after all), we start again with the business understanding phase which allows us to ask some new questions and proceed with a new route of exploration. 
+
+## Cycle 1
 Business understanding:   
-The data from the course comes from an online course on cyber security over seven runs of the course. Various different datasets are gathered as part of the process of running this course, and it is from this data that an attempt to draw useful information will be made. Obviously the people running this course will want to know where they can improve the course, with obvious areas for improvement being reducing the dropout rateor or increasing test scores in the online quizzes, amongst many others. For the first cycle I will look at the video statistics data.  
+The data from the course comes from an online course on cyber security over seven runs of the course. Various different datasets are gathered as part of the process of running this course, and it is from this data that an attempt to draw useful information will be made. The people running this course will want to know where they can improve the course. There are certain obvious issues that could be addressed, such as looking at the data for dropout rates or scoring on test questions. However, by performing some exploratory data analysis there is the potential to discover uknown correlations or tendencies that can provide valuable insight to improving the learning experience.  
+The first dataset I will look at is the video statistics data. The video data has the potential to be very useful, this is an online course and thus watching the videos is one of the primary modes of learning the course content. If it is found that some of the videos are unpopular or that videos are not being watched at all, it would probably indicate that students are not learning the course material as thoroughly as they could be.  
+Looking at the video duration, total views, as well as the number of viewers that watched a given percentage of the video are the analyses I will focus on. Some simple plots will potentially reveal a wealth of information regarding the success of the video format as pedagogical tool.  
 Data Understanding:  
-The data for the video statistics is relatively easy to understand as it anonymised and such rather than having data for each individual student is just contains summary statistics for the entire cohort in question. Each section of the course has a video associated with it (e.g. Welcome to Week 2: payment security) and for each video statistics relating to video duration, total views, total downloads, total transcript views, the percentage of students who watched various percentages of the video, the viewing device, as well as the breakdown for different geographical areas that watched the videos. This dataset is only available for the 3rd to 7th run of the course.  
+The data for the video statistics is relatively easy to understand as it anonymised and such rather than having data for each individual student is just contains summary statistics for the entire cohort in question. Although, this is somewhat unfortunate from an exploratory standpoint as it doesn't allow any comparison of video statistics for a given learner to, for example, their test scores. Each section of the course has a video associated with it (e.g. Welcome to Week 2: payment security) and for each video statistics relating to video duration, total views, total downloads, total transcript views, the percentage of students who watched various percentages of the video, the viewing device, as well as the breakdown for different geographical areas that watched the videos. This dataset is only available for the 3rd to 7th run of the course.  
 Data Preparation:  
-In this case not a huge amount of data preprocessing was required, as the data is already in a format to allow the analysis that I wanted to perform. In the munging section of the project template library I simply combined the datasets from the 3rd to the 7th run of the course, as any potential correlations would have more reliability associated with them.  
-Modelling:
-```{r}
+In this case not a huge amount of data preprocessing was required, as the data is already in a format to allow the analysis that I wanted to perform. In the munging section of the project template library I simply combined the datasets from the 3rd to the 7th run of the course and thus perform my analysis on the combined data across many runs of the course, this will hopefully increase the reliability of any enquires and the associated infernces made from the data. A cursory glance through each of the 5 data-sets allowed me to see that there were no missing values. 
+Modeling:
+```{r, echo=FALSE}
 ## Plot the total views vs step position
 g = ggplot(data=video_data_merged, aes(x=step_position, y=total_views))
 g + geom_point() + geom_smooth(method=lm)+ ggtitle("Plot of total views vs step position") + xlab("Step position") + ylab("Total views")
 ## Calculate the correlation between step position and total views
-cor(video_data_merged$step_position,video_data_merged$total_views)
+corr=cor(video_data_merged$step_position,video_data_merged$total_views)
 ```
-Step progression denotes at what stage of the course the video is at. Clearly, as the course progresses, less and less people are watching the videos. 
-```{r}
+Step progression denotes at what stage of the course the video is at. Clearly, as the course progresses, less and less people are watching the videos. The correlation coefficient is -0.59, where positive one or negative one would indicate perfect correlation.
+```{r, echo=FALSE}
 ## Plotting the video duration vs the the percentage of people that watched the entire video
 g = ggplot(data=video_data_merged, aes(x=video_duration, y=viewed_onehundred_percent))
-g + geom_point() + geom_smooth(method=lm)+ ggtitle("Plot of percentage that wacthed entire video vs video duration") + xlab("Video duration") + ylab("Percentage that watched entire video")
+g + geom_point() + geom_smooth(method=lm)+ ggtitle("Plot of percentage that watched entire video vs video duration") + xlab("Video duration (seconds)") + ylab("Percentage that watched entire video")
 ## Calculate the correlation between video length and percentage of people that watched the entire video
-cor(video_data_merged$video_duration,video_data_merged$viewed_onehundred_percent)
+corr1=cor(video_data_merged$video_duration,video_data_merged$viewed_onehundred_percent)
 ```
-There is a negative correlation between video length and the percentage of people who wacthed the entire video. However, there is a cleaer outlier with the longest video. This video is: The evolving arms race of payment security. Maybe having an exciting title such as this provides a strong incentive for people to watch the video. 
+There is a negative correlation between video length and the percentage of people who wacthed the entire video. The correlation coefficient is, coincidentally, -0.59 again. However, there is a clear outlier with the longest video. This video is: The evolving arms race of payment security. 
+```{r, echo=FALSE}
 
-```{r}
-## Plotting the step_position vs the percent who watched one hundred per cent of the video
-g = ggplot(data=video_data_merged, aes(x=step_position, y=total_views))
-g + geom_point() + geom_smooth(method=lm)+ ggtitle("Plot of total views vs step position") + xlab("Step position") + ylab("Total views")
-plot(video_data_merged$step_position, video_data_merged$viewed_onehundred_percent)
+g = ggplot(data=video_data_merged, aes(x=step_position, y=viewed_onehundred_percent))
+g + geom_point() + geom_smooth(method=lm)+ ggtitle("Plot of percentage that watched entire video vs step position") + xlab("Step position") + ylab("Percent that watched entire video")
 ## There is no particular trend shown here
 ## However, this is only telling us that the students who bother to watch any of the video 
 ## are likely to watch it, which is maybe unsurprising because it is probably only the
 ## students who are committed who are still watching at the end
-## MAybe more insightful to plot number of viewers against step number
+## Maybe more insightful to plot number of viewers against step number
 
-plot(video_data_merged$step_position, video_data_merged$total_views)
-##This shows a clear downward trend over the course
 
 ```
+Evaluation:
+Clearly, as the course progresses, the number of poeple watching the video drastically decreases. This is quite problematic, presumably a large amount of effort was put into creating these videos and if people aren't watching them this is a considerable waste of resources. We would expect the number to decrease somewhat, as people tend to be most motivated at the beginning of a course and some people will drop out.
+However, from the graph of total views vs step position it is clear that the mean number of people watching the video at the end is approximately half of what is was at the beginning. This is not a very high success rate.  
+In addition to this, there is a negative correlation between video length and percentage of poeple who have watched the entire video. However, there is an outlier, the longest video, titled: The evolving arms race of payment security. Maybe having an exciting title such as this provides a strong incentive for people to watch the video, and then to continue watching the video till the end.  
+
+Deployment: The analysis in this cycle has revealed that video duration and the step at which the video is played has a significant influence on the number of viewers. To address this, the length of video could be decreased. The same amount of material could be covered, but maybe in a format where the length of each video is shorter but with more videos overall. 
+
 
 ## Cycle 2
 
@@ -66,7 +73,7 @@ The data files on question response are available for every single year of the p
 Data preparation: 
 To prepare the data for use I created a function that creates a dataframe containing the information about each student that I'm interested in.
 
-```{r}
+```{r, echo=FALSE}
 ## Changing the names of the dataframes
 question_data_7 = cyber.security.7.question.response
 question_data_6 = cyber.security.6.question.response
@@ -92,11 +99,10 @@ student_stats_4 = student_dataframe(question_data_4)
 student_stats_3 = student_dataframe(question_data_3)
 student_stats_2 = student_dataframe(question_data_2)
 student_stats_1 = student_dataframe(question_data_1)
-head(student_stats_1)
 ```
 Modeling:
 I created another function which counted the number each student answered correct, wrong, percent correct, as well as number answered. 
-```{r}
+```{r, echo=FALSE}
 
 student_statistics = function(question_data, student_stats){
   for (i in 1:(nrow(student_stats))){
@@ -121,37 +127,57 @@ student_stats_1 = student_statistics(question_data_1, student_stats_1)
 ## Merge all the data sets into one
 stud_stats_df = do.call("rbind", list(student_stats_1, student_stats_2, student_stats_3, student_stats_4,
                                       student_stats_5, student_stats_6, student_stats_7))
-head(student_stats_1)
 ```
 Now that a dataframe containg the relevant information has been created I can continue with the intended analysis. 
 
-```{r}
+```{r, echo=FALSE}
 theme_set(theme_classic())
 
 plot_distr = function(questions){
-graph = ggplot(questions, aes(x=percent), size=5) + geom_density(aes(fill=factor(1)), alpha=0.8) +
-  geom_vline((aes(xintercept=mean(questions$percent))), color="red", linetype="dashed", size=1)
+graph = ggplot(questions, aes(x=percent), size=5) + geom_density(fill="lightgreen") +
+  geom_vline((aes(xintercept=mean(questions$percent))), color="red", linetype="dashed", size=1) + xlab("Percent correct") + ylab("Density")+ggtitle("Distribution of Percent Correct (Average over all runs of the course)")
 return(graph)
 }
 
-plot_distr(student_stats_7)
-plot_distr(student_stats_6)
-plot_distr(student_stats_5)
-plot_distr(student_stats_4)
-plot_distr(student_stats_3)
-plot_distr(student_stats_2)
-plot_distr(student_stats_1)
 
-## Maybe plot percent mark vs number of question answered
-  
+plot_distr(stud_stats_df)
+
+mean1=mean(student_stats_1$percent)
+mean2=mean(student_stats_2$percent)
+mean3=mean(student_stats_3$percent)
+mean4=mean(student_stats_4$percent)
+mean5=mean(student_stats_5$percent)
+mean6=mean(student_stats_6$percent)
+mean7=mean(student_stats_7$percent)
+
+sd1=sd(student_stats_1$percent)
+sd2=sd(student_stats_2$percent)
+sd3=sd(student_stats_3$percent)
+sd4=sd(student_stats_4$percent)
+sd5=sd(student_stats_5$percent)
+sd6=sd(student_stats_6$percent)
+sd7=sd(student_stats_7$percent)
 ```
 
-```{r}
+
+Course Run    | Mean          | Standard Deviation
+------------- | ------------- | ------------------
+1             | 60.17         | 16.76
+2             | 63.00         |16.74
+3             | 63.36         | 16.79
+4             | 60.49         |17.80
+5             | 61.93         | 17.54
+6             | 61.81         |18.22
+7             | 62.55         | 18.16
+
+
+```{r, echo=FALSE}
 ## Note: some students, didn't have a student id, these should be removed from the dataset at this stage ## as otherwise they will have a very high number of questions answered value
 stud_stats_df = filter(stud_stats_df, learner_id != '')
 g = ggplot(data=stud_stats_df, aes(x=questions_answered, y=percent))
 g + geom_count() + geom_smooth(method=lm)+ ggtitle("Plot of mean percentage vs number of question responses") + xlab("Question responses") + ylab("Mean Percentage")
 cor(stud_stats_df$questions_answered,stud_stats_df$percent)
+
 ```
 
 ## Cycle 3
@@ -163,7 +189,7 @@ The data files contain the leraner ID, the archetype assigned to the given learn
 Data preparation: 
 To prepare the data I simply removed all of the data except for the student ID and the archetype. I then merged each archetype to its corresponding student statistics dataframe from the second CRISP-DM cycle. I then merged all of these into a combined dataframe. 
 
-```{r}
+```{r, echo=FALSE}
 ## Merge the data frame for archetype with the student statistics 
 archetype_3_merged = merge(x = student_stats_3, y = archetype_3, by = 'learner_id')
 archetype_4_merged = merge(x = student_stats_4, y = archetype_4, by = 'learner_id')
@@ -175,14 +201,20 @@ all_archetype_df = do.call("rbind", list(archetype_3_merged,archetype_4_merged, 
                                          archetype_6_merged, archetype_7_merged))
 ```
 Modeling: 
-```{r}
+```{r, echo=FALSE}
 p <- ggplot(all_archetype_df, aes(x=archetype, y=percent)) + 
-  geom_boxplot() 
+  geom_boxplot(varwidth=T, aes(fill=factor(archetype))) + 
+  ggtitle("Boxplot of Mean Percentage for each archetype") +
+  xlab("Archetype") + ylab("Mean Percentage")+ 
+  theme(axis.text.x = element_text(angle=65, vjust=0.6)) 
   p
+
 p <- ggplot(all_archetype_df, aes(x=archetype, y=questions_answered)) + 
-  geom_boxplot() 
+  geom_boxplot(varwidth=T, aes(fill=factor(archetype))) + 
+  ggtitle("Boxplot of mean number of questions answered for each archetype") +
+  xlab("Archetype") + ylab("Mean Number of Questions Answered")+ 
+  theme(axis.text.x = element_text(angle=65, vjust=0.6)) 
   p
-## Plot the number of each archtype 
 ```
 
 

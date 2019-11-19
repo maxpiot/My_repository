@@ -55,10 +55,14 @@ stud_stats_df = do.call("rbind", list(student_stats_1, student_stats_2, student_
 stud_stats_df = filter(stud_stats_df, learner_id != '')
 
 plot_distr = function(questions){
-graph = ggplot(questions, aes(x=percent), size=5) + geom_density() +
-  geom_vline((aes(xintercept=mean(questions$percent))), color="red", linetype="dashed", size=1)
+graph = ggplot(questions, aes(x=percent), size=5) + geom_density(fill="lightgreen") +
+  geom_vline((aes(xintercept=mean(questions$percent))), color="red", linetype="dashed", size=1) + xlab("Percent correct") + ylab("Density")+ggtitle("Distribution of Percent Correct")
 return(graph)
 }
+
+plot_distr(student_stats_7)
+
+plot_distr(student_stats_7)
 
 
 plot(student_stats$questions_answered,student_stats$percent)
